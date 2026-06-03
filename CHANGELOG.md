@@ -16,6 +16,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Retry-After` and otherwise applies exponential backoff with jitter.
 - `parseRetryAfter` and `parseGoogleRetryDelay` low-level helpers.
 - Provider auto-detection with an explicit `{ provider }` override.
+- Transport-level error detection (timeouts, `ECONNRESET`, `AbortError`, DNS
+  failures) classified as retryable `timeout` / `server_error`.
 - Header parsing for `Headers` instances, plain objects, `Map`s and `[k, v]`
   pair arrays.
 - Zero runtime dependencies; ESM + CJS builds with type declarations.

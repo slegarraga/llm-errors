@@ -25,6 +25,7 @@ try {
 - **Correct retry decisions.** `insufficient_quota` and `context_length_exceeded` look like other 4xx/429s but are _not_ worth retrying. `llm-errors` separates them out.
 - **Honours `Retry-After`.** Reads the `Retry-After` header (seconds _or_ HTTP date), OpenAI's `retry-after-ms`, and Google's `RetryInfo.retryDelay` — then falls back to exponential backoff with jitter when none is given.
 - **Never throws.** Feed it an SDK error, a raw `fetch` response, plain JSON, `null`, or a string — it always returns a `NormalizedError`.
+- **Transport errors too.** Connection timeouts, resets and DNS failures (`ETIMEDOUT`, `ECONNRESET`, `AbortError`, …) have no HTTP status, yet they are retryable — `llm-errors` classifies them as `timeout` / `server_error` instead of dropping them.
 - **Zero dependencies**, ESM + CJS, fully typed.
 
 ## Install

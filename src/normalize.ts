@@ -11,6 +11,7 @@ import {
   readMessage,
   readStatus,
 } from './internal.ts';
+import { classifyNetworkError } from './network.ts';
 import * as anthropic from './providers/anthropic.ts';
 import * as gemini from './providers/gemini.ts';
 import * as openai from './providers/openai.ts';
@@ -86,13 +87,26 @@ export function normalizeError(
   const provider = options.provider ?? detectProvider(ctx);
   const classification = classifyFor(provider, ctx);
 
+  let category = classification.category;
+  let code = classification.code;
+
+  // No HTTP response reached us: this may be a transport-level failure
+  // (timeout, dropped connection) that is retryable despite having no status.
+  if (category === 'unknown' && ctx.status === undefined) {
+    const network = classifyNetworkError(error);
+    if (network) {
+      category = network.category;
+      code = code ?? network.code;
+    }
+  }
+
   return {
     provider,
-    category: classification.category,
+    category,
     message: readMessage(error, ctx.body),
     status: ctx.status,
-    code: classification.code,
-    retryable: isRetryableCategory(classification.category),
+    code,
+    retryable: isRetryableCategory(category),
     retryAfterMs: classification.retryAfterMs,
     raw: error,
   };
