@@ -1,5 +1,11 @@
 # llm-errors
 
+[![npm version](https://img.shields.io/npm/v/llm-errors.svg)](https://www.npmjs.com/package/llm-errors)
+[![npm downloads](https://img.shields.io/npm/dm/llm-errors.svg)](https://www.npmjs.com/package/llm-errors)
+[![CI](https://github.com/slegarraga/llm-errors/actions/workflows/ci.yml/badge.svg)](https://github.com/slegarraga/llm-errors/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/llm-errors.svg)](./LICENSE)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
+
 > Normalize OpenAI, Anthropic and Gemini API errors into one shape: category, retryable flag and `Retry-After` delay. **Zero dependencies.**
 
 Every LLM provider fails differently. OpenAI nests `{ error: { type, code, param } }`, Anthropic wraps `{ type: "error", error: { type } }`, Gemini speaks Google RPC status strings, and each puts retry hints in a different place. `llm-errors` collapses all of that into a single, predictable object so your retry and error-handling code stays provider-agnostic.
