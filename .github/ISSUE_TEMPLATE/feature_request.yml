@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a provider error shape or retry behaviour to support
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the error-handling or retry case.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the normalized output look like?
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to provider documentation or example payloads.

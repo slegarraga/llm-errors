@@ -1,0 +1,44 @@
+name: Bug report
+description: Report an error shape that classifies incorrectly
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report. A minimal error fixture makes a bug fixable.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of llm-errors?
+      placeholder: 0.1.2
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      description: Which provider or transport produced the error?
+      options:
+        - openai
+        - anthropic
+        - gemini
+        - openai-compatible
+        - transport/fetch
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Error input
+      description: Minimal SDK error, fetch response, headers/body, or plain value.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: Expected category/retryable/retryAfterMs and actual output.
+    validations:
+      required: true
