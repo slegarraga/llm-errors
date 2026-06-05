@@ -1,0 +1,18 @@
+{
+  "name": "OpenAI SDK APIError rate limit",
+  "shape": "openai-sdk-apierror",
+  "error": {
+    "status": 429,
+    "headers": {
+      "openai-version": "2020-10-01",
+      "retry-after-ms": "1250",
+      "retry-after": "2"
+    },
+    "error": {
+      "message": "Rate limit reached for requests",
+      "type": "rate_limit_error",
+      "code": "rate_limit_exceeded",
+      "param": null
+    }
+  }
+}

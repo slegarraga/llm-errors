@@ -1,0 +1,18 @@
+{
+  "name": "Anthropic parsed fetch response rate limit",
+  "shape": "anthropic-fetch-parsed-body",
+  "error": {
+    "status": 429,
+    "headers": {
+      "anthropic-ratelimit-requests-limit": "50",
+      "retry-after": "30"
+    },
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "rate_limit_error",
+        "message": "rate limit exceeded"
+      }
+    }
+  }
+}

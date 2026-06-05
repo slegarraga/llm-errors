@@ -1,0 +1,8 @@
+{
+  "provider": "gemini",
+  "category": "permission",
+  "message": "The caller does not have permission.",
+  "status": 403,
+  "code": "PERMISSION_DENIED",
+  "retryable": false
+}

@@ -1,0 +1,8 @@
+{
+  "provider": "anthropic",
+  "category": "overloaded",
+  "message": "Overloaded",
+  "status": 529,
+  "code": "overloaded_error",
+  "retryable": true
+}

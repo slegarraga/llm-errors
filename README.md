@@ -44,6 +44,17 @@ try {
 npm install llm-errors
 ```
 
+## Fixture corpus
+
+The npm package includes a public fixture corpus under
+[`fixtures/`](./fixtures/README.md). It pairs raw SDK-like, fetch-like and
+transport-level provider errors with the normalized output expected from
+`normalizeError`.
+
+These fixtures are useful for downstream regression tests when you want to
+verify provider-portable retry and error handling without importing OpenAI,
+Anthropic or Gemini SDKs.
+
 ## API
 
 ### `normalizeError(error, options?) => NormalizedError`

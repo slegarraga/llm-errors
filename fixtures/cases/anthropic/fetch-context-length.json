@@ -1,0 +1,17 @@
+{
+  "name": "Anthropic parsed fetch response prompt too long",
+  "shape": "anthropic-fetch-parsed-body",
+  "error": {
+    "status": 400,
+    "headers": {
+      "anthropic-version": "2023-06-01"
+    },
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "message": "prompt is too long: 250000 tokens > 200000 maximum"
+      }
+    }
+  }
+}

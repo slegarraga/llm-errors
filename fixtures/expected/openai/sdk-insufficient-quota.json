@@ -1,0 +1,8 @@
+{
+  "provider": "openai",
+  "category": "insufficient_quota",
+  "message": "You exceeded your current quota.",
+  "status": 429,
+  "code": "insufficient_quota",
+  "retryable": false
+}
