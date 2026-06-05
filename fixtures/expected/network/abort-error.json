@@ -1,0 +1,7 @@
+{
+  "provider": "unknown",
+  "category": "timeout",
+  "message": "The operation was aborted.",
+  "code": "AbortError",
+  "retryable": true
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Gemini parsed fetch response unavailable",
+  "shape": "google-rpc-fetch-parsed-body",
+  "error": {
+    "response": {
+      "status": 503,
+      "headers": {
+        "retry-after": "4"
+      },
+      "data": {
+        "error": {
+          "code": 503,
+          "message": "The model is overloaded. Please try again later.",
+          "status": "UNAVAILABLE"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "provider": "unknown",
+  "category": "timeout",
+  "message": "connect ETIMEDOUT",
+  "code": "ETIMEDOUT",
+  "retryable": true
+}

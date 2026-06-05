@@ -1,0 +1,17 @@
+{
+  "name": "Anthropic SDK overloaded response",
+  "shape": "anthropic-sdk-apierror",
+  "error": {
+    "status": 529,
+    "headers": {
+      "anthropic-version": "2023-06-01"
+    },
+    "error": {
+      "type": "error",
+      "error": {
+        "type": "overloaded_error",
+        "message": "Overloaded"
+      }
+    }
+  }
+}

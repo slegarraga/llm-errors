@@ -1,0 +1,9 @@
+{
+  "name": "Node transport timeout",
+  "shape": "node-error-code",
+  "error": {
+    "name": "Error",
+    "message": "connect ETIMEDOUT",
+    "code": "ETIMEDOUT"
+  }
+}

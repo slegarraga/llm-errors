@@ -1,0 +1,13 @@
+{
+  "name": "OpenAI SDK APIError insufficient quota",
+  "shape": "openai-sdk-apierror",
+  "error": {
+    "status": 429,
+    "error": {
+      "message": "You exceeded your current quota.",
+      "type": "insufficient_quota",
+      "code": "insufficient_quota",
+      "param": null
+    }
+  }
+}

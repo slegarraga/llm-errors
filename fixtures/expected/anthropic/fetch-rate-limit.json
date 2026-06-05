@@ -1,0 +1,9 @@
+{
+  "provider": "anthropic",
+  "category": "rate_limit",
+  "message": "rate limit exceeded",
+  "status": 429,
+  "code": "rate_limit_error",
+  "retryable": true,
+  "retryAfterMs": 30000
+}

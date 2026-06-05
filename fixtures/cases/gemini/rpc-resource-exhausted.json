@@ -1,0 +1,17 @@
+{
+  "name": "Gemini Google RPC resource exhausted",
+  "shape": "google-rpc-error-envelope",
+  "error": {
+    "error": {
+      "code": 429,
+      "message": "Resource has been exhausted.",
+      "status": "RESOURCE_EXHAUSTED",
+      "details": [
+        {
+          "@type": "type.googleapis.com/google.rpc.RetryInfo",
+          "retryDelay": "17s"
+        }
+      ]
+    }
+  }
+}

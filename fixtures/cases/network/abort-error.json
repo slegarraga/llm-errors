@@ -1,0 +1,8 @@
+{
+  "name": "Browser fetch abort",
+  "shape": "dom-abort-error",
+  "error": {
+    "name": "AbortError",
+    "message": "The operation was aborted."
+  }
+}

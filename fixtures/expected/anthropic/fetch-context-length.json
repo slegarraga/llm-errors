@@ -1,0 +1,8 @@
+{
+  "provider": "anthropic",
+  "category": "context_length_exceeded",
+  "message": "prompt is too long: 250000 tokens > 200000 maximum",
+  "status": 400,
+  "code": "invalid_request_error",
+  "retryable": false
+}
