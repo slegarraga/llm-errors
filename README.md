@@ -9,6 +9,9 @@
 
 > Normalize OpenAI, Anthropic and Gemini API errors into one shape: category, retryable flag and `Retry-After` delay. **Zero dependencies.**
 
+Security posture is tracked in [docs/security-posture.md](./docs/security-posture.md),
+including CodeQL, OpenSSF Scorecard, Dependabot and branch rules.
+
 Every LLM provider fails differently. OpenAI nests `{ error: { type, code, param } }`, Anthropic wraps `{ type: "error", error: { type } }`, Gemini speaks Google RPC status strings, and each puts retry hints in a different place. `llm-errors` collapses all of that into a single, predictable object so your retry and error-handling code stays provider-agnostic.
 
 ```ts
