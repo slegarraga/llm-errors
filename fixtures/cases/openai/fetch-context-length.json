@@ -1,0 +1,18 @@
+{
+  "name": "OpenAI parsed fetch response context length",
+  "shape": "openai-fetch-parsed-body",
+  "error": {
+    "status": 400,
+    "headers": {
+      "openai-processing-ms": "42"
+    },
+    "body": {
+      "error": {
+        "message": "This model's maximum context length is 128000 tokens.",
+        "type": "invalid_request_error",
+        "code": "context_length_exceeded",
+        "param": "messages"
+      }
+    }
+  }
+}

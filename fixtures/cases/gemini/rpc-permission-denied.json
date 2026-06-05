@@ -1,0 +1,11 @@
+{
+  "name": "Gemini Google RPC permission denied",
+  "shape": "google-rpc-error-envelope",
+  "error": {
+    "error": {
+      "code": 403,
+      "message": "The caller does not have permission.",
+      "status": "PERMISSION_DENIED"
+    }
+  }
+}

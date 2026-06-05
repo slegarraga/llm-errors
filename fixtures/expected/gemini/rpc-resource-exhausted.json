@@ -1,0 +1,9 @@
+{
+  "provider": "gemini",
+  "category": "rate_limit",
+  "message": "Resource has been exhausted.",
+  "status": 429,
+  "code": "RESOURCE_EXHAUSTED",
+  "retryable": true,
+  "retryAfterMs": 17000
+}

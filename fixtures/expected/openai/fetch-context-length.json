@@ -1,0 +1,8 @@
+{
+  "provider": "openai",
+  "category": "context_length_exceeded",
+  "message": "This model's maximum context length is 128000 tokens.",
+  "status": 400,
+  "code": "context_length_exceeded",
+  "retryable": false
+}

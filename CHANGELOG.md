@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-06-05
+
+### Added
+
+- Added a public provider error fixture corpus for OpenAI, Anthropic, Gemini and
+  transport-level failures, covering SDK-like objects, parsed fetch responses
+  and expected normalized outputs.
+- Added fixture-driven regression tests and published `fixtures/` in the npm
+  package.
+
+## [0.1.3] - 2026-06-04
+
+### Changed
+
+- Updated vulnerable development tooling and added CodeQL, OpenSSF Scorecard,
+  pinned GitHub Actions, least-privilege workflow permissions, Dependabot config
+  and a Scorecard README badge.
+
 ## [0.1.2] - 2026-06-04
 
 ### Changed
@@ -36,4 +54,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   pair arrays.
 - Zero runtime dependencies; ESM + CJS builds with type declarations.
 
+[0.1.4]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.4
+[0.1.3]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.3
+[0.1.2]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.2
+[0.1.1]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.1
 [0.1.0]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.0
