@@ -16,4 +16,3 @@
 `llm-errors` is maintained as a public MIT package for provider-portable error
 classification and retry handling. The primary maintainer controls the GitHub
 repository, npm package, release tags and security policy.
-
