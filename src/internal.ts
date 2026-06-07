@@ -29,10 +29,69 @@ export function firstNumber(...values: unknown[]): number | undefined {
   return undefined;
 }
 
+function httpStatus(value: unknown): number | undefined {
+  const numeric =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^[1-5]\d{2}$/.test(value.trim())
+        ? Number(value)
+        : undefined;
+
+  if (
+    typeof numeric === 'number' &&
+    Number.isInteger(numeric) &&
+    numeric >= 100 &&
+    numeric <= 599
+  ) {
+    return numeric;
+  }
+  return undefined;
+}
+
+function firstHttpStatus(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    const status = httpStatus(value);
+    if (status !== undefined) {
+      return status;
+    }
+  }
+  return undefined;
+}
+
+function headerValueToString(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const stringValue = headerValueToString(entry);
+      if (stringValue !== undefined) {
+        return stringValue;
+      }
+    }
+  }
+  return undefined;
+}
+
+function headerPairValue(entry: unknown, lower: string): string | undefined {
+  if (
+    Array.isArray(entry) &&
+    typeof entry[0] === 'string' &&
+    entry[0].toLowerCase() === lower
+  ) {
+    return headerValueToString(entry[1]);
+  }
+  return undefined;
+}
+
 /**
  * Read a header by name from the many container shapes an error may carry:
  * a `Headers` instance, a plain object, a `Map`, or an array of `[k, v]`
- * pairs. Lookup is case-insensitive.
+ * pairs. Lookup is case-insensitive and accepts common Node-style values such
+ * as numbers or string arrays.
  */
 export function getHeader(headers: unknown, name: string): string | undefined {
   if (!headers) {
@@ -43,21 +102,23 @@ export function getHeader(headers: unknown, name: string): string | undefined {
   // `Headers` (fetch) or `Map`-like: has a `.get` method.
   if (typeof (headers as { get?: unknown }).get === 'function') {
     const value = (headers as { get(key: string): unknown }).get(name);
-    return typeof value === 'string' ? value : undefined;
+    const stringValue = headerValueToString(value);
+    if (stringValue !== undefined) {
+      return stringValue;
+    }
   }
 
-  // Array of [key, value] pairs.
-  if (Array.isArray(headers)) {
-    for (const entry of headers) {
-      if (
-        Array.isArray(entry) &&
-        typeof entry[0] === 'string' &&
-        entry[0].toLowerCase() === lower
-      ) {
-        return typeof entry[1] === 'string' ? entry[1] : undefined;
+  // Iterable containers (`Map`, `Headers`, arrays of [key, value] pairs).
+  if (
+    typeof (headers as { [Symbol.iterator]?: unknown })[Symbol.iterator] ===
+    'function'
+  ) {
+    for (const entry of headers as Iterable<unknown>) {
+      const value = headerPairValue(entry, lower);
+      if (value !== undefined) {
+        return value;
       }
     }
-    return undefined;
   }
 
   // Plain object: case-insensitive key scan.
@@ -65,12 +126,23 @@ export function getHeader(headers: unknown, name: string): string | undefined {
     for (const key of Object.keys(headers)) {
       if (key.toLowerCase() === lower) {
         const value = headers[key];
-        return typeof value === 'string' ? value : undefined;
+        return headerValueToString(value);
       }
     }
   }
 
   return undefined;
+}
+
+function looksLikeProviderErrorBody(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.type === 'string' ||
+    typeof value.code === 'string' ||
+    (typeof value.code === 'number' && typeof value.status === 'string') ||
+    typeof value.status === 'string' ||
+    Array.isArray(value.details) ||
+    'param' in value
+  );
 }
 
 /** Extract an HTTP status code from common error shapes. */
@@ -80,10 +152,12 @@ export function readStatus(error: unknown): number | undefined {
   }
   const response = isObject(error.response) ? error.response : undefined;
   const inner = isObject(error.error) ? error.error : undefined;
-  return firstNumber(
+  return firstHttpStatus(
     error.status,
     error.statusCode,
+    looksLikeProviderErrorBody(error) ? error.code : undefined,
     response?.status,
+    response?.statusCode,
     // Google encodes the status as `error.code` (a numeric HTTP status).
     inner?.code,
   );
@@ -109,6 +183,11 @@ export function readErrorBody(
   if (!isObject(error)) {
     return undefined;
   }
+  const body = isObject(error.body) ? error.body : undefined;
+  const responseData =
+    isObject(error.response) && isObject(error.response.data)
+      ? error.response.data
+      : undefined;
 
   // Anthropic wraps as `{ type: 'error', error: {...} }`; OpenAI/Gemini SDK
   // error objects expose the inner payload directly at `.error`.
@@ -116,12 +195,13 @@ export function readErrorBody(
     isObject(error.error) && isObject(error.error.error)
       ? error.error.error
       : error.error,
-    isObject(error.body)
-      ? (error.body as Record<string, unknown>).error
+    body?.error,
+    responseData?.error,
+    body && looksLikeProviderErrorBody(body) ? body : undefined,
+    responseData && looksLikeProviderErrorBody(responseData)
+      ? responseData
       : undefined,
-    isObject(error.response) && isObject(error.response.data)
-      ? (error.response.data as Record<string, unknown>).error
-      : undefined,
+    looksLikeProviderErrorBody(error) ? error : undefined,
   ];
 
   for (const candidate of candidates) {

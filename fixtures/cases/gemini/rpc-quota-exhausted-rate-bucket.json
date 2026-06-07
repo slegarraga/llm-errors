@@ -1,0 +1,11 @@
+{
+  "name": "Gemini RESOURCE_EXHAUSTED rate bucket without billing signal",
+  "shape": "google-rpc-error-body",
+  "error": {
+    "error": {
+      "code": 429,
+      "message": "Quota exceeded for requests per minute.",
+      "status": "RESOURCE_EXHAUSTED"
+    }
+  }
+}

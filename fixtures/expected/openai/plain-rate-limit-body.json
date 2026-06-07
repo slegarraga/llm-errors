@@ -1,0 +1,7 @@
+{
+  "provider": "openai",
+  "category": "rate_limit",
+  "message": "Rate limit reached for requests",
+  "code": "rate_limit_exceeded",
+  "retryable": true
+}

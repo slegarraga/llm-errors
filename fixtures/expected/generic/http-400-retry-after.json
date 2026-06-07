@@ -1,0 +1,7 @@
+{
+  "provider": "unknown",
+  "category": "invalid_request",
+  "message": "Bad request",
+  "status": 400,
+  "retryable": false
+}

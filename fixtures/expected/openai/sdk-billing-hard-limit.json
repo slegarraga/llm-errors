@@ -1,0 +1,7 @@
+{
+  "provider": "openai",
+  "category": "insufficient_quota",
+  "message": "Billing hard limit has been reached",
+  "code": "billing_hard_limit_reached",
+  "retryable": false
+}

@@ -8,6 +8,25 @@ import { firstString } from '../internal.ts';
 import { parseRetryAfter } from '../retry.ts';
 import type { ErrorCategory } from '../types.ts';
 
+const OPENAI_CODES = new Set([
+  'billing_hard_limit_reached',
+  'billing_not_active',
+  'context_length_exceeded',
+  'content_filter',
+  'content_policy_violation',
+  'insufficient_quota',
+  'invalid_api_key',
+  'model_not_found',
+  'rate_limit_exceeded',
+]);
+
+function includesAny(
+  haystack: string,
+  needles: ReadonlyArray<string>,
+): boolean {
+  return needles.some((needle) => haystack.includes(needle));
+}
+
 /** Heuristic: does this error look like it came from the OpenAI API? */
 export function matches(ctx: ProviderContext): boolean {
   if (
@@ -29,18 +48,15 @@ export function matches(ctx: ProviderContext): boolean {
     return true;
   }
   const code = firstString(body.code);
-  return (
-    code === 'context_length_exceeded' ||
-    code === 'insufficient_quota' ||
-    code === 'invalid_api_key'
-  );
+  return code !== undefined && OPENAI_CODES.has(code);
 }
 
 export function classify(ctx: ProviderContext): Classification {
   const body = ctx.body ?? {};
   const type = firstString(body.type);
   const code = firstString(body.code);
-  const identifier = `${type ?? ''} ${code ?? ''}`.toLowerCase();
+  const message = firstString(body.message) ?? '';
+  const identifier = `${type ?? ''} ${code ?? ''} ${message}`.toLowerCase();
 
   let category: ErrorCategory = baseCategoryFromStatus(ctx.status);
 
@@ -49,20 +65,42 @@ export function classify(ctx: ProviderContext): Classification {
     identifier.includes('context window')
   ) {
     category = 'context_length_exceeded';
-  } else if (identifier.includes('insufficient_quota')) {
+  } else if (
+    includesAny(identifier, [
+      'insufficient_quota',
+      'billing_hard_limit',
+      'billing_not_active',
+      'exceeded your current quota',
+    ])
+  ) {
     category = 'insufficient_quota';
   } else if (
-    identifier.includes('content_filter') ||
-    identifier.includes('content_policy')
+    includesAny(identifier, [
+      'content_filter',
+      'content_policy',
+      'safety_policy',
+    ])
   ) {
     category = 'content_filter';
   } else if (
     code === 'invalid_api_key' ||
-    identifier.includes('authentication')
+    includesAny(identifier, ['authentication', 'unauthorized'])
   ) {
     category = 'authentication';
-  } else if (category === 'unknown' && identifier.includes('rate_limit')) {
+  } else if (includesAny(identifier, ['permission', 'forbidden'])) {
+    category = 'permission';
+  } else if (includesAny(identifier, ['not_found', 'model_not_found'])) {
+    category = 'not_found';
+  } else if (includesAny(identifier, ['timeout', 'timed out'])) {
+    category = 'timeout';
+  } else if (includesAny(identifier, ['overload', 'unavailable'])) {
+    category = 'overloaded';
+  } else if (includesAny(identifier, ['server_error', 'api_error'])) {
+    category = 'server_error';
+  } else if (identifier.includes('rate_limit')) {
     category = 'rate_limit';
+  } else if (category === 'unknown' && identifier.includes('invalid_request')) {
+    category = 'invalid_request';
   }
 
   const retryAfterMs =

@@ -12,7 +12,7 @@
 Security posture is tracked in [docs/security-posture.md](./docs/security-posture.md),
 including CodeQL, OpenSSF Scorecard, Dependabot and branch rules.
 
-Every LLM provider fails differently. OpenAI nests `{ error: { type, code, param } }`, Anthropic wraps `{ type: "error", error: { type } }`, Gemini speaks Google RPC status strings, and each puts retry hints in a different place. `llm-errors` collapses all of that into a single, predictable object so your retry and error-handling code stays provider-agnostic.
+Every LLM provider fails differently. OpenAI nests `{ error: { type, code, param } }`, Anthropic wraps `{ type: "error", error: { type } }`, Gemini speaks Google RPC status strings, and each puts retry hints in a different place. Generic HTTP failures add their own wrinkles with status-only errors and `Retry-After` headers. `llm-errors` collapses all of that into a single, predictable object so your retry and error-handling code stays provider-agnostic.
 
 ```ts
 import { normalizeError, getRetryDelayMs } from 'llm-errors';
@@ -33,7 +33,7 @@ try {
 
 - **One `switch`, not three.** A `rate_limit` is a `rate_limit` whether it came from OpenAI's `code`, Anthropic's `type`, or Gemini's `RESOURCE_EXHAUSTED`.
 - **Correct retry decisions.** `insufficient_quota` and `context_length_exceeded` look like other 4xx/429s but are _not_ worth retrying. `llm-errors` separates them out.
-- **Honours `Retry-After`.** Reads the `Retry-After` header (seconds _or_ HTTP date), OpenAI's `retry-after-ms`, and Google's `RetryInfo.retryDelay` — then falls back to exponential backoff with jitter when none is given.
+- **Honours `Retry-After` safely.** Reads the `Retry-After` header (seconds _or_ HTTP date), `retry-after-ms`, and Google's `RetryInfo.retryDelay` for retryable errors — then falls back to exponential backoff with jitter when none is given.
 - **Never throws.** Feed it an SDK error, a raw `fetch` response, plain JSON, `null`, or a string — it always returns a `NormalizedError`.
 - **Transport errors too.** Connection timeouts, resets and DNS failures (`ETIMEDOUT`, `ECONNRESET`, `AbortError`, …) have no HTTP status, yet they are retryable — `llm-errors` classifies them as `timeout` / `server_error` instead of dropping them.
 - **Zero dependencies**, ESM + CJS, fully typed.
@@ -69,16 +69,21 @@ interface NormalizedError {
   status?: number; // HTTP status, when available
   code?: string; // provider-specific code / type
   retryable: boolean;
-  retryAfterMs?: number; // provider-supplied delay, if any
+  retryAfterMs?: number; // provider-supplied delay for retryable errors, if any
   raw: unknown; // the original input
 }
 ```
 
-The provider is auto-detected from the error shape. Pass `{ provider }` to force it when you already know which client threw or the shape is ambiguous:
+The provider is auto-detected from SDK errors, parsed fetch envelopes and direct provider error bodies. Pass `{ provider }` to force it when you already know which client threw or the shape is ambiguous:
 
 ```ts
 normalizeError(err, { provider: 'anthropic' });
 ```
+
+Unknown providers still get safe status-based behavior. For example, a plain
+`{ status: 503, headers: { "Retry-After": "4" } }` normalizes to
+`provider: "unknown"`, `category: "overloaded"`, `retryable: true` and
+`retryAfterMs: 4000`. A non-retryable unknown status ignores the same header.
 
 ### `ErrorCategory`
 
@@ -98,13 +103,17 @@ normalizeError(err, { provider: 'anthropic' });
 | `overloaded`              |  **yes**  | Provider temporarily overloaded (503 / 529) |
 | `unknown`                 |    no     | Could not be classified                     |
 
+Only `rate_limit`, `server_error`, `overloaded` and `timeout` are retryable.
+`unknown` is deliberately not retryable, so unrecognized shapes fail closed
+instead of causing accidental retry storms.
+
 ### `isRetryableError(error, options?) => boolean`
 
 Shorthand for `normalizeError(error).retryable`.
 
 ### `getRetryDelayMs(error, attempt, options?) => number`
 
-Returns the delay to wait before the next attempt. If the provider supplied `retryAfterMs`, that always wins. Otherwise it computes exponential backoff `baseMs * 2 ** attempt`, capped at `maxMs`, with full jitter by default.
+Returns the delay to wait before the next attempt. Non-retryable errors return `0`. If the provider supplied a valid `retryAfterMs`, that wins. Otherwise it computes exponential backoff `baseMs * 2 ** attempt`, capped at `maxMs`, with full jitter by default.
 
 ```ts
 getRetryDelayMs(e, attempt, { baseMs: 500, maxMs: 60_000, jitter: 'full' });

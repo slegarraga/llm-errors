@@ -45,6 +45,40 @@ describe('anthropic errors', () => {
     expect(e.retryable).toBe(true);
   });
 
+  it('maps billing_error to insufficient_quota and not retryable', () => {
+    const e = normalizeError({
+      status: 429,
+      error: {
+        type: 'error',
+        error: {
+          type: 'billing_error',
+          message: 'Your credit balance is too low.',
+        },
+      },
+    });
+    expect(e.provider).toBe('anthropic');
+    expect(e.category).toBe('insufficient_quota');
+    expect(e.retryable).toBe(false);
+  });
+
+  it('lets credit balance wording override retryable rate-limit type', () => {
+    const e = normalizeError({
+      status: 429,
+      headers: { 'retry-after': '30' },
+      error: {
+        type: 'error',
+        error: {
+          type: 'rate_limit_error',
+          message: 'Your credit balance is too low.',
+        },
+      },
+    });
+    expect(e.provider).toBe('anthropic');
+    expect(e.category).toBe('insufficient_quota');
+    expect(e.retryable).toBe(false);
+    expect(e.retryAfterMs).toBeUndefined();
+  });
+
   it('detects an over-long prompt as context_length_exceeded', () => {
     const e = normalizeError({
       status: 400,

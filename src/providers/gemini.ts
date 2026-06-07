@@ -35,6 +35,18 @@ function rpcStatus(ctx: ProviderContext): string | undefined {
   return undefined;
 }
 
+function isQuotaExhaustedMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('quota') &&
+    (lower.includes('billing') ||
+      lower.includes('paid plan') ||
+      lower.includes('free tier') ||
+      lower.includes('check your plan') ||
+      lower.includes('upgrade'))
+  );
+}
+
 /** Heuristic: does this error look like it came from the Gemini API? */
 export function matches(ctx: ProviderContext): boolean {
   if (rpcStatus(ctx) !== undefined) {
@@ -46,13 +58,21 @@ export function matches(ctx: ProviderContext): boolean {
 
 export function classify(ctx: ProviderContext): Classification {
   const status = rpcStatus(ctx);
-
-  const mapped = status ? RPC_STATUS[status] : undefined;
-  const category: ErrorCategory = mapped ?? baseCategoryFromStatus(ctx.status);
-
+  const message = firstString(ctx.body?.message) ?? '';
   const retryAfterMs =
     parseGoogleRetryDelay(ctx.body?.details) ??
+    parseRetryAfter(firstHeader(ctx.headers, 'retry-after-ms'), 'ms') ??
     parseRetryAfter(firstHeader(ctx.headers, 'retry-after'));
+
+  const mapped = status ? RPC_STATUS[status] : undefined;
+  let category: ErrorCategory = mapped ?? baseCategoryFromStatus(ctx.status);
+  if (
+    status === 'RESOURCE_EXHAUSTED' &&
+    retryAfterMs === undefined &&
+    isQuotaExhaustedMessage(message)
+  ) {
+    category = 'insufficient_quota';
+  }
 
   return { category, code: status, retryAfterMs };
 }

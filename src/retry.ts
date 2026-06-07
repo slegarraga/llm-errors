@@ -1,6 +1,12 @@
 import { isObject } from './internal.ts';
 import type { NormalizedError, RetryDelayOptions } from './types.ts';
 
+function nonNegativeFinite(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
 /**
  * Parse a `Retry-After` header value into milliseconds.
  *
@@ -24,6 +30,10 @@ export function parseRetryAfter(
   if (Number.isFinite(numeric)) {
     const ms = unit === 'ms' ? numeric : numeric * 1000;
     return ms >= 0 ? ms : undefined;
+  }
+
+  if (unit === 'ms') {
+    return undefined;
   }
 
   const date = Date.parse(trimmed);
@@ -64,8 +74,19 @@ export function parseGoogleRetryDelay(details: unknown): number | undefined {
         typeof delay.seconds === 'number'
           ? delay.seconds
           : Number(delay.seconds);
-      const nanos = typeof delay.nanos === 'number' ? delay.nanos : 0;
-      if (Number.isFinite(seconds) && seconds >= 0) {
+      const nanos =
+        delay.nanos === undefined
+          ? 0
+          : typeof delay.nanos === 'number'
+            ? delay.nanos
+            : Number(delay.nanos);
+      if (
+        Number.isFinite(seconds) &&
+        seconds >= 0 &&
+        Number.isFinite(nanos) &&
+        nanos >= 0 &&
+        nanos < 1e9
+      ) {
         return seconds * 1000 + Math.round(nanos / 1e6);
       }
     }
@@ -76,8 +97,9 @@ export function parseGoogleRetryDelay(details: unknown): number | undefined {
 /**
  * Suggested delay before retrying, in milliseconds.
  *
- * When the provider supplied an explicit delay (`error.retryAfterMs`) it is
- * always respected. Otherwise this falls back to exponential backoff:
+ * Non-retryable errors return `0`. When the provider supplied an explicit
+ * valid delay (`error.retryAfterMs`) it is respected. Otherwise this falls
+ * back to exponential backoff:
  * `baseMs * 2 ** attempt`, capped at `maxMs`, with optional full jitter.
  *
  * @param error   A {@link NormalizedError}.
@@ -89,15 +111,21 @@ export function getRetryDelayMs(
   attempt: number,
   options: RetryDelayOptions = {},
 ): number {
-  if (typeof error.retryAfterMs === 'number') {
-    return error.retryAfterMs;
+  if (!error.retryable) {
+    return 0;
   }
 
-  const baseMs = options.baseMs ?? 500;
-  const maxMs = options.maxMs ?? 60000;
+  const explicitDelay = nonNegativeFinite(error.retryAfterMs);
+  if (explicitDelay !== undefined) {
+    return explicitDelay;
+  }
+
+  const baseMs = nonNegativeFinite(options.baseMs) ?? 500;
+  const maxMs = nonNegativeFinite(options.maxMs) ?? 60000;
   const jitter = options.jitter ?? 'full';
 
-  const safeAttempt = Number.isFinite(attempt) && attempt > 0 ? attempt : 0;
+  const safeAttempt =
+    Number.isFinite(attempt) && attempt > 0 ? Math.floor(attempt) : 0;
   const exponential = Math.min(maxMs, baseMs * 2 ** safeAttempt);
 
   if (jitter === 'none') {

@@ -1,0 +1,9 @@
+{
+  "name": "Gemini direct plain unavailable body",
+  "shape": "plain-provider-error-body",
+  "error": {
+    "code": 503,
+    "message": "The model is overloaded. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "provider": "anthropic",
+  "category": "insufficient_quota",
+  "message": "Your credit balance is too low.",
+  "status": 429,
+  "code": "billing_error",
+  "retryable": false
+}

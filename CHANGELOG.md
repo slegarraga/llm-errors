@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.1.5] - 2026-06-07
+
+### Added
+
+- Added fixtures for direct provider error bodies, generic HTTP `Retry-After`
+  handling, OpenAI billing hard-limit errors, Anthropic billing errors and
+  Gemini quota/billing exhaustion.
+- Added fixtures for mixed billing/rate-limit signals, generic non-retryable
+  `Retry-After` headers and Gemini rate-bucket quota exhaustion.
+
+### Changed
+
+- Preserve `Retry-After` / `retry-after-ms` delays for provider-unknown HTTP
+  errors.
+- Detect direct provider error bodies, case-insensitive `Map` headers and common
+  Node-style numeric or array header values.
+- Classify more provider code/type strings without requiring an HTTP status,
+  including quota, permission, not-found, timeout, overload and server failures.
+- Only expose provider retry delays on retryable normalized errors, validate
+  HTTP status candidates and reject invalid retry delay values.
+
 ## [0.1.4] - 2026-06-05
 
 ### Added
@@ -54,6 +77,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   pair arrays.
 - Zero runtime dependencies; ESM + CJS builds with type declarations.
 
+[Unreleased]: https://github.com/slegarraga/llm-errors/compare/v0.1.4...HEAD
 [0.1.4]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.4
 [0.1.3]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.3
 [0.1.2]: https://github.com/slegarraga/llm-errors/releases/tag/v0.1.2

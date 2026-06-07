@@ -1,0 +1,14 @@
+{
+  "name": "Anthropic SDK billing error",
+  "shape": "anthropic-sdk-error-envelope",
+  "error": {
+    "status": 429,
+    "error": {
+      "type": "error",
+      "error": {
+        "type": "billing_error",
+        "message": "Your credit balance is too low."
+      }
+    }
+  }
+}

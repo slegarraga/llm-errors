@@ -1,0 +1,8 @@
+{
+  "provider": "unknown",
+  "category": "overloaded",
+  "message": "Service temporarily unavailable",
+  "status": 503,
+  "retryable": true,
+  "retryAfterMs": 6000
+}

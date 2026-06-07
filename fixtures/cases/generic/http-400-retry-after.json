@@ -1,0 +1,15 @@
+{
+  "name": "Generic HTTP 400 with ignored Retry-After",
+  "shape": "fetch-like-http-error",
+  "error": {
+    "statusCode": 400,
+    "headers": {
+      "Retry-After": "60"
+    },
+    "body": {
+      "error": {
+        "message": "Bad request"
+      }
+    }
+  }
+}

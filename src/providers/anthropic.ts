@@ -63,9 +63,17 @@ export function classify(ctx: ProviderContext): Classification {
       message.includes('context window'))
   ) {
     category = 'context_length_exceeded';
+  } else if (
+    message.includes('credit balance') ||
+    message.includes('billing') ||
+    message.includes('insufficient quota')
+  ) {
+    category = 'insufficient_quota';
   }
 
-  const retryAfterMs = parseRetryAfter(firstHeader(ctx.headers, 'retry-after'));
+  const retryAfterMs =
+    parseRetryAfter(firstHeader(ctx.headers, 'retry-after-ms'), 'ms') ??
+    parseRetryAfter(firstHeader(ctx.headers, 'retry-after'));
 
   return { category, code: type, retryAfterMs };
 }

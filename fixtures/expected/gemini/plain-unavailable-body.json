@@ -1,0 +1,8 @@
+{
+  "provider": "gemini",
+  "category": "overloaded",
+  "message": "The model is overloaded. Please try again later.",
+  "status": 503,
+  "code": "UNAVAILABLE",
+  "retryable": true
+}

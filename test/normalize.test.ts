@@ -65,10 +65,83 @@ describe('header container shapes', () => {
   it('reads a Map of headers', () => {
     const e = normalizeError({
       status: 429,
-      headers: new Map([['retry-after', '9']]),
+      headers: new Map([['Retry-After', '9']]),
       error: { type: 'rate_limit_error', param: null },
     });
     expect(e.retryAfterMs).toBe(9000);
+  });
+
+  it('reads numeric and string-array header values from plain objects', () => {
+    const e = normalizeError({
+      status: 429,
+      headers: { 'retry-after': [12], 'retry-after-ms': 2500 },
+      error: { type: 'rate_limit_error', param: null },
+    });
+    expect(e.retryAfterMs).toBe(2500);
+  });
+});
+
+describe('plain provider bodies', () => {
+  it('detects a direct OpenAI error body', () => {
+    const e = normalizeError({
+      message: 'Rate limit reached for requests',
+      type: 'rate_limit_error',
+      code: 'rate_limit_exceeded',
+      param: null,
+    });
+    expect(e.provider).toBe('openai');
+    expect(e.category).toBe('rate_limit');
+    expect(e.retryable).toBe(true);
+  });
+
+  it('detects a direct Gemini RPC error body and numeric code status', () => {
+    const e = normalizeError({
+      code: 503,
+      message: 'The model is overloaded. Please try again later.',
+      status: 'UNAVAILABLE',
+    });
+    expect(e.provider).toBe('gemini');
+    expect(e.status).toBe(503);
+    expect(e.category).toBe('overloaded');
+    expect(e.retryable).toBe(true);
+  });
+
+  it('does not expose non-HTTP Gemini numeric codes as HTTP status', () => {
+    const e = normalizeError({
+      code: 8,
+      message: 'Resource exhausted',
+      status: 'RESOURCE_EXHAUSTED',
+    });
+    expect(e.provider).toBe('gemini');
+    expect(e.status).toBeUndefined();
+    expect(e.category).toBe('rate_limit');
+    expect(e.retryable).toBe(true);
+  });
+});
+
+describe('generic HTTP errors', () => {
+  it('preserves Retry-After for unknown retryable status errors', () => {
+    const e = normalizeError({
+      statusCode: 503,
+      headers: { 'retry-after': '4' },
+      body: { error: { message: 'Service temporarily unavailable' } },
+    });
+    expect(e.provider).toBe('unknown');
+    expect(e.category).toBe('overloaded');
+    expect(e.retryable).toBe(true);
+    expect(e.retryAfterMs).toBe(4000);
+  });
+
+  it('drops Retry-After on non-retryable unknown status errors', () => {
+    const e = normalizeError({
+      statusCode: 400,
+      headers: { 'retry-after': '60' },
+      body: { error: { message: 'Bad request' } },
+    });
+    expect(e.provider).toBe('unknown');
+    expect(e.category).toBe('invalid_request');
+    expect(e.retryable).toBe(false);
+    expect(e.retryAfterMs).toBeUndefined();
   });
 });
 

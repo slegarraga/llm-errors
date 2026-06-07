@@ -26,6 +26,33 @@ describe('gemini errors', () => {
     expect(e.code).toBe('RESOURCE_EXHAUSTED');
   });
 
+  it('separates billing quota exhaustion from retryable rate limits', () => {
+    const e = normalizeError({
+      error: {
+        code: 429,
+        message:
+          'You exceeded your current quota, please check your plan and billing details.',
+        status: 'RESOURCE_EXHAUSTED',
+      },
+    });
+    expect(e.provider).toBe('gemini');
+    expect(e.category).toBe('insufficient_quota');
+    expect(e.retryable).toBe(false);
+  });
+
+  it('keeps generic quota exhaustion retryable when no billing signal exists', () => {
+    const e = normalizeError({
+      error: {
+        code: 429,
+        message: 'Quota exceeded for requests per minute.',
+        status: 'RESOURCE_EXHAUSTED',
+      },
+    });
+    expect(e.provider).toBe('gemini');
+    expect(e.category).toBe('rate_limit');
+    expect(e.retryable).toBe(true);
+  });
+
   it('classifies PERMISSION_DENIED as not retryable', () => {
     const e = normalizeError({
       error: {

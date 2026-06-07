@@ -1,0 +1,12 @@
+{
+  "name": "OpenAI SDK billing hard limit",
+  "shape": "openai-sdk-api-error",
+  "error": {
+    "error": {
+      "message": "Billing hard limit has been reached",
+      "type": "invalid_request_error",
+      "code": "billing_hard_limit_reached",
+      "param": null
+    }
+  }
+}

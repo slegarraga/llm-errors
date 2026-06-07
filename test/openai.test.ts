@@ -41,6 +41,7 @@ describe('openai errors', () => {
   it('separates insufficient_quota from rate limits (not retryable)', () => {
     const e = normalizeError({
       status: 429,
+      headers: { 'retry-after': '30' },
       error: {
         message: 'You exceeded your current quota',
         type: 'insufficient_quota',
@@ -48,6 +49,21 @@ describe('openai errors', () => {
         param: null,
       },
     });
+    expect(e.category).toBe('insufficient_quota');
+    expect(e.retryable).toBe(false);
+    expect(e.retryAfterMs).toBeUndefined();
+  });
+
+  it('maps billing hard limits without a status to insufficient_quota', () => {
+    const e = normalizeError({
+      error: {
+        message: 'Billing hard limit has been reached',
+        type: 'invalid_request_error',
+        code: 'billing_hard_limit_reached',
+        param: null,
+      },
+    });
+    expect(e.provider).toBe('openai');
     expect(e.category).toBe('insufficient_quota');
     expect(e.retryable).toBe(false);
   });

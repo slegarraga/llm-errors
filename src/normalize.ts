@@ -1,5 +1,6 @@
 import {
   baseCategoryFromStatus,
+  firstHeader,
   isRetryableCategory,
   type Classification,
   type ProviderContext,
@@ -15,6 +16,7 @@ import { classifyNetworkError } from './network.ts';
 import * as anthropic from './providers/anthropic.ts';
 import * as gemini from './providers/gemini.ts';
 import * as openai from './providers/openai.ts';
+import { parseRetryAfter } from './retry.ts';
 import type { NormalizedError, NormalizeOptions, Provider } from './types.ts';
 
 /**
@@ -52,6 +54,9 @@ function classifyFor(provider: Provider, ctx: ProviderContext): Classification {
       return {
         category: baseCategoryFromStatus(ctx.status),
         code: firstString(ctx.body?.type, ctx.body?.code),
+        retryAfterMs:
+          parseRetryAfter(firstHeader(ctx.headers, 'retry-after-ms'), 'ms') ??
+          parseRetryAfter(firstHeader(ctx.headers, 'retry-after')),
       };
   }
 }
@@ -100,14 +105,16 @@ export function normalizeError(
     }
   }
 
+  const retryable = isRetryableCategory(category);
+
   return {
     provider,
     category,
     message: readMessage(error, ctx.body),
     status: ctx.status,
     code,
-    retryable: isRetryableCategory(category),
-    retryAfterMs: classification.retryAfterMs,
+    retryable,
+    retryAfterMs: retryable ? classification.retryAfterMs : undefined,
     raw: error,
   };
 }

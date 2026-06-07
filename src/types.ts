@@ -63,8 +63,9 @@ export interface NormalizedError {
   retryable: boolean;
   /**
    * Suggested delay in milliseconds before retrying, derived from the provider
-   * (`Retry-After` header, Google `RetryInfo`, etc.). `undefined` when the
-   * provider did not specify one — use {@link getRetryDelayMs} for a fallback.
+   * (`Retry-After` header, Google `RetryInfo`, etc.) for retryable errors.
+   * `undefined` when the provider did not specify one, or when the normalized
+   * category is not retryable — use {@link getRetryDelayMs} for a fallback.
    */
   retryAfterMs?: number;
   /** The original value passed to {@link normalizeError}, untouched. */
@@ -93,7 +94,8 @@ export interface RetryDelayOptions {
   /**
    * Jitter strategy applied to the exponential delay. `'full'` picks a random
    * value in `[0, delay]`, `'none'` disables jitter. Default `'full'`.
-   * Ignored when the provider supplied an explicit `retryAfterMs`.
+   * Ignored when the provider supplied an explicit `retryAfterMs`, or when the
+   * error is not retryable.
    */
   jitter?: 'full' | 'none';
 }

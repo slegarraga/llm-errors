@@ -1,0 +1,10 @@
+{
+  "name": "OpenAI direct plain rate limit body",
+  "shape": "plain-provider-error-body",
+  "error": {
+    "message": "Rate limit reached for requests",
+    "type": "rate_limit_error",
+    "code": "rate_limit_exceeded",
+    "param": null
+  }
+}
