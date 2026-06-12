@@ -35,6 +35,15 @@ describe('network / transport errors', () => {
     expect(e.retryable).toBe(true);
   });
 
+  it('does not treat a deliberate user abort as retryable', () => {
+    // The OpenAI SDK throws APIUserAbortError when the caller cancels the
+    // request; resurrecting it with a retry would defeat the cancellation.
+    class APIUserAbortError extends Error {}
+    const e = normalizeError(new APIUserAbortError('Request was aborted.'));
+    expect(e.category).toBe('unknown');
+    expect(e.retryable).toBe(false);
+  });
+
   it('recognizes the SDK APIConnectionTimeoutError class name', () => {
     class APIConnectionTimeoutError extends Error {}
     const e = normalizeError(new APIConnectionTimeoutError('timed out'));

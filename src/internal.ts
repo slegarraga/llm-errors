@@ -101,10 +101,14 @@ export function getHeader(headers: unknown, name: string): string | undefined {
 
   // `Headers` (fetch) or `Map`-like: has a `.get` method.
   if (typeof (headers as { get?: unknown }).get === 'function') {
-    const value = (headers as { get(key: string): unknown }).get(name);
-    const stringValue = headerValueToString(value);
-    if (stringValue !== undefined) {
-      return stringValue;
+    try {
+      const value = (headers as { get(key: string): unknown }).get(name);
+      const stringValue = headerValueToString(value);
+      if (stringValue !== undefined) {
+        return stringValue;
+      }
+    } catch {
+      // Fall through to iterable/plain-object probes below.
     }
   }
 
@@ -113,11 +117,15 @@ export function getHeader(headers: unknown, name: string): string | undefined {
     typeof (headers as { [Symbol.iterator]?: unknown })[Symbol.iterator] ===
     'function'
   ) {
-    for (const entry of headers as Iterable<unknown>) {
-      const value = headerPairValue(entry, lower);
-      if (value !== undefined) {
-        return value;
+    try {
+      for (const entry of headers as Iterable<unknown>) {
+        const value = headerPairValue(entry, lower);
+        if (value !== undefined) {
+          return value;
+        }
       }
+    } catch {
+      // Fall through to plain-object probe below.
     }
   }
 

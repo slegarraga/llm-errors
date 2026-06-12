@@ -65,6 +65,16 @@ export function classifyNetworkError(
     firstString(error.name),
     firstString((error.constructor as { name?: unknown } | undefined)?.name),
   ];
+
+  // A deliberate caller cancellation (e.g. the OpenAI SDK's
+  // `APIUserAbortError`) is not a transport failure: retrying a request the
+  // caller chose to abort would resurrect it against their intent.
+  for (const name of names) {
+    if (name && name.toLowerCase().includes('userabort')) {
+      return undefined;
+    }
+  }
+
   for (const name of names) {
     if (!name) {
       continue;

@@ -79,6 +79,27 @@ describe('header container shapes', () => {
     });
     expect(e.retryAfterMs).toBe(2500);
   });
+
+  it('falls back when header accessors throw', () => {
+    const e = normalizeError({
+      status: 429,
+      headers: {
+        get() {
+          throw new Error('broken get');
+        },
+        [Symbol.iterator]() {
+          return {
+            next() {
+              throw new Error('broken iterator');
+            },
+          };
+        },
+        'retry-after': '3',
+      },
+      error: { type: 'rate_limit_error', param: null },
+    });
+    expect(e.retryAfterMs).toBe(3000);
+  });
 });
 
 describe('plain provider bodies', () => {

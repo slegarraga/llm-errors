@@ -6,6 +6,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-12
+
+### Fixed
+
+- Header probing no longer fails when a header container's `get` method or
+  iterator throws; lookup falls through to the remaining container shapes.
+- A deliberate caller cancellation (the OpenAI SDK's `APIUserAbortError`) is
+  no longer classified as a retryable timeout.
+
 ## [0.1.6] - 2026-06-11
 
 ### Changed
