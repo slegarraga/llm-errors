@@ -1,6 +1,6 @@
 {
   "name": "llm-errors",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Normalize OpenAI, Anthropic and Gemini API errors into one shape: category, retryable flag and Retry-After delay. Zero dependencies.",
   "keywords": [
     "openai",
