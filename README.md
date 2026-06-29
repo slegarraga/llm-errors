@@ -6,11 +6,10 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/slegarraga/llm-errors/badge)](https://scorecard.dev/viewer/?uri=github.com/slegarraga/llm-errors)
 [![license](https://img.shields.io/npm/l/llm-errors.svg)](./LICENSE)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
+[![install size](https://packagephobia.com/badge?p=llm-errors)](https://packagephobia.com/result?p=llm-errors)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/llm-errors?label=min%2Bgzip)](https://bundlephobia.com/package/llm-errors)
 
-> Normalize OpenAI, Anthropic and Gemini API errors into one shape: category, retryable flag and `Retry-After` delay. **Zero dependencies.**
-
-Security posture is tracked in [docs/security-posture.md](./docs/security-posture.md),
-including CodeQL, OpenSSF Scorecard, Dependabot and branch rules.
+> One normalized error shape for OpenAI, Anthropic, Gemini and Vercel AI SDK: category, retryable flag, and provider-supplied retry delay. Zero dependencies.
 
 Every LLM provider fails differently. OpenAI nests `{ error: { type, code, param } }`, Anthropic wraps `{ type: "error", error: { type } }`, Gemini speaks Google RPC status strings, and each puts retry hints in a different place. Generic HTTP failures add their own wrinkles with status-only errors and `Retry-After` headers. `llm-errors` collapses all of that into a single, predictable object so your retry and error-handling code stays provider-agnostic.
 
@@ -33,16 +32,113 @@ try {
 
 - **One `switch`, not three.** A `rate_limit` is a `rate_limit` whether it came from OpenAI's `code`, Anthropic's `type`, or Gemini's `RESOURCE_EXHAUSTED`.
 - **Correct retry decisions.** `insufficient_quota` and `context_length_exceeded` look like other 4xx/429s but are _not_ worth retrying. `llm-errors` separates them out.
-- **Honours `Retry-After` safely.** Reads the `Retry-After` header (seconds _or_ HTTP date), `retry-after-ms`, and Google's `RetryInfo.retryDelay` for retryable errors — then falls back to exponential backoff with jitter when none is given.
-- **Never throws.** Feed it an SDK error, a raw `fetch` response, plain JSON, `null`, or a string — it always returns a `NormalizedError`.
-- **Transport errors too.** Connection timeouts, resets and DNS failures (`ETIMEDOUT`, `ECONNRESET`, `AbortError`, …) have no HTTP status, yet they are retryable — `llm-errors` classifies them as `timeout` / `server_error` instead of dropping them.
+- **Honours `Retry-After` safely.** Reads the `Retry-After` header (seconds _or_ HTTP date), `retry-after-ms`, and Google's `RetryInfo.retryDelay` for retryable errors, then falls back to exponential backoff with jitter when none is given.
+- **Never throws.** Feed it an SDK error, a raw `fetch` response, plain JSON, `null`, or a string, and it always returns a `NormalizedError`.
+- **Transport errors too.** Connection timeouts, resets and DNS failures (`ETIMEDOUT`, `ECONNRESET`, `AbortError`, ...) have no HTTP status, yet they are retryable. `llm-errors` classifies them as `timeout` / `server_error` instead of dropping them.
 - **Zero dependencies**, ESM + CJS, fully typed.
+
+## Why not X?
+
+**axios-retry / got / p-retry:** These retry HTTP calls generically. They know nothing about `insufficient_quota` (billing exhausted, never retryable) vs `rate_limit` (transient, should retry), so they will happily burn your quota retrying deterministic failures. `llm-errors` makes that distinction explicit, per provider.
+
+**SDK built-in retries (openai `maxRetries`, Anthropic SDK auto-retry):** These help for simple cases but cannot be turned off per-error-type and do not give you the normalized error object for logging, alerting, or custom branching (`context_length_exceeded` needs to trim history, not retry).
+
+**Rolling your own:** You end up writing the same per-provider shape inspection three times, getting the `Retry-After` parsing edge cases wrong (HTTP date format, millisecond header, Google proto format), and missing transport-level errors that carry no status code at all.
 
 ## Install
 
 ```sh
 npm install llm-errors
 ```
+
+## Integrations
+
+Drop `normalizeError` into your existing SDK calls with no structural change. The three snippets below show the pattern once each; the branching logic is identical across all of them.
+
+### OpenAI SDK
+
+```ts
+import OpenAI from 'openai';
+import { normalizeError, getRetryDelayMs } from 'llm-errors';
+
+const client = new OpenAI();
+
+async function chat(prompt: string, attempt = 0): Promise<string> {
+  try {
+    const res = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return res.choices[0].message.content ?? '';
+  } catch (err) {
+    const e = normalizeError(err); // provider auto-detected as 'openai'
+    if (e.category === 'context_length_exceeded')
+      throw new Error('Prompt too long');
+    if (e.retryable && attempt < 4) {
+      await new Promise((r) => setTimeout(r, getRetryDelayMs(e, attempt)));
+      return chat(prompt, attempt + 1);
+    }
+    throw err;
+  }
+}
+```
+
+### Anthropic SDK
+
+```ts
+import Anthropic from '@anthropic-ai/sdk';
+import { normalizeError, getRetryDelayMs } from 'llm-errors';
+
+const client = new Anthropic();
+
+async function generate(prompt: string, attempt = 0): Promise<string> {
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-3-5-haiku-latest',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return msg.content.find((b) => b.type === 'text')?.text ?? '';
+  } catch (err) {
+    const e = normalizeError(err); // provider auto-detected as 'anthropic'
+    if (e.retryable && attempt < 4) {
+      await new Promise((r) => setTimeout(r, getRetryDelayMs(e, attempt)));
+      return generate(prompt, attempt + 1);
+    }
+    throw err;
+  }
+}
+```
+
+### Vercel AI SDK
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { normalizeError, getRetryDelayMs } from 'llm-errors';
+
+async function run(prompt: string, attempt = 0): Promise<string> {
+  try {
+    const { text } = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+    });
+    return text;
+  } catch (err) {
+    const e = normalizeError(err, { provider: 'openai' }); // hint the provider when wrapping Vercel AI SDK errors
+    if (e.retryable && attempt < 4) {
+      await new Promise((r) => setTimeout(r, getRetryDelayMs(e, attempt)));
+      return run(prompt, attempt + 1);
+    }
+    throw err;
+  }
+}
+```
+
+> When using the Vercel AI SDK, the underlying SDK error shape may differ from the raw OpenAI/Anthropic SDK shape. Passing `{ provider }` as a hint improves detection accuracy.
+
+Security posture is tracked in [docs/security-posture.md](./docs/security-posture.md),
+including CodeQL, OpenSSF Scorecard, Dependabot and branch rules.
 
 ## Fixture corpus
 
@@ -143,8 +239,10 @@ async function withRetries<T>(call: () => Promise<T>, max = 5): Promise<T> {
 
 ## Related
 
-- [`tool-schema`](https://www.npmjs.com/package/tool-schema) — convert a JSON Schema into OpenAI / Anthropic / Gemini / MCP tool schemas.
-- [`llm-messages`](https://www.npmjs.com/package/llm-messages) — convert conversations and responses between providers.
+- [`json-from-llm`](https://www.npmjs.com/package/json-from-llm): extract valid JSON from an LLM response, even inside reasoning tags, fenced blocks or prose
+- [`tool-schema`](https://www.npmjs.com/package/tool-schema): convert a JSON Schema into a provider tool / function-calling schema for OpenAI, Anthropic, Gemini and MCP
+- [`llm-sse`](https://www.npmjs.com/package/llm-sse): parse streaming SSE from LLM providers into typed, provider-agnostic events
+- [`llm-messages`](https://www.npmjs.com/package/llm-messages): convert chat messages between OpenAI, Anthropic and Gemini formats
 
 ## License
 
