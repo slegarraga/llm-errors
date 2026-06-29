@@ -1,7 +1,7 @@
 # llm-errors
 
 [![npm version](https://img.shields.io/npm/v/llm-errors.svg)](https://www.npmjs.com/package/llm-errors)
-[![npm downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fslegarraga%2Fllm-errors%2Fmain%2Fbadges%2Fnpm-downloads%2Fllm-errors.json)](https://www.npmjs.com/package/llm-errors)
+[![npm downloads](https://img.shields.io/npm/dm/llm-errors?logo=npm&label=downloads)](https://www.npmjs.com/package/llm-errors)
 [![CI](https://github.com/slegarraga/llm-errors/actions/workflows/ci.yml/badge.svg)](https://github.com/slegarraga/llm-errors/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/slegarraga/llm-errors/badge)](https://scorecard.dev/viewer/?uri=github.com/slegarraga/llm-errors)
 [![license](https://img.shields.io/npm/l/llm-errors.svg)](./LICENSE)
